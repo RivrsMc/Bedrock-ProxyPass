@@ -4,7 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.JsonNodeType;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
-import net.raphimc.minecraftauth.step.bedrock.StepMCChain.MCChain;
+import org.cloudburstmc.protocol.bedrock.data.EncodingSettings;
 import org.cloudburstmc.protocol.bedrock.data.PacketCompressionAlgorithm;
 import org.cloudburstmc.protocol.bedrock.packet.BedrockPacketHandler;
 import org.cloudburstmc.protocol.bedrock.packet.LoginPacket;
@@ -17,6 +17,7 @@ import org.cloudburstmc.protocol.bedrock.util.JsonUtils;
 import org.cloudburstmc.protocol.common.PacketSignal;
 import org.cloudburstmc.proxypass.ProxyPass;
 import org.cloudburstmc.proxypass.network.bedrock.util.ForgeryUtils;
+import org.cloudburstmc.proxypass.network.bedrock.util.SkinUtils;
 import org.jose4j.json.JsonUtil;
 import org.jose4j.json.internal.json_simple.JSONObject;
 import org.jose4j.jws.JsonWebSignature;
@@ -126,6 +127,7 @@ public class UpstreamPacketHandler implements BedrockPacketHandler {
         this.proxy.newClient(this.proxy.getTargetAddress(), downstream -> {
             downstream.setCodec(ProxyPass.CODEC);
             downstream.setSendSession(this.session);
+            downstream.getPeer().getCodecHelper().setEncodingSettings(EncodingSettings.CLIENT);
             this.session.setSendSession(downstream);
 
             ProxyPlayerSession proxySession = new ProxyPlayerSession(
@@ -145,6 +147,7 @@ public class UpstreamPacketHandler implements BedrockPacketHandler {
                 jws.setCompactSerialization(jwt);
                 player.getLogger().saveJson("chainData", new JSONObject(JsonUtil.parseJson(jws.getUnverifiedPayload())));
                 player.getLogger().saveJson("skinData", this.skinData);
+                SkinUtils.saveSkin(proxySession, this.skinData);
             } catch (Exception e) {
                 log.error("JSON output error: " + e.getMessage(), e);
             }
